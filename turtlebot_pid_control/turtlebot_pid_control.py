@@ -53,23 +53,14 @@ class TurtleBotController(Node):
         """Proportional controller to compute linear and angular velocities."""
         r = np.sqrt((self.x)**2 + (self.y)**2)
 
-        # Check if close to the target
-        if (abs(self.x - self.targets[self.target_index][0]) < 0.1 and
-                abs(self.y - self.targets[self.target_index][1]) < 0.1):
-            self.get_logger().info(f"reached target: {self.targets[self.target_index]}")
-            self.target_index += 1
-            self.target_index %= len(self.targets)
-
-            self.get_logger().info(f"Going to next target: {self.targets[self.target_index]}")
-
         x_target = self.targets[self.target_index][0]
         y_target = self.targets[self.target_index][1]
 
-        k_w = 1
+        k_w = 3
         k_v = 0.5
         # _theta = _theta if _theta >= 0 else 2 * np.pi + _theta
         error_w = np.arctan2(y_target - self.y, x_target - self.x) - self.theta
-        while error_w < 0:
+        while error_w < -np.pi:
             error_w += 2 * np.pi
         _w = k_w * error_w
 
@@ -81,9 +72,20 @@ class TurtleBotController(Node):
         # v = _v / _d * 2
         # w = _w / _d * 2
 
-        v = _v
+        v = 0.5
         w = _w
         # v = 2.0
+
+        # Check if close to the target
+        if (abs(self.x - self.targets[self.target_index][0]) < 0.05 and
+                abs(self.y - self.targets[self.target_index][1]) < 0.05):
+            self.get_logger().info(f"reached target: {self.targets[self.target_index]}")
+            self.target_index += 1
+            self.target_index %= len(self.targets)
+            # w = 0.0
+            v = 2.0
+
+            self.get_logger().info(f"Going to next target: {self.targets[self.target_index]}")
 
         # Publish the velocity
         cmd = Twist()
@@ -124,7 +126,7 @@ def main(args=None):
     targets = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]])
 
     # Run controller
-    controller = TurtleBotController(T=25.0, dt=0.00001, targets=targets)
+    controller = TurtleBotController(T=25.0, dt=0.005, targets=targets)
     rclpy.spin(controller)
 
     # Optional: Plot trajectory
